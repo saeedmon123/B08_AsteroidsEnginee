@@ -15,7 +15,13 @@ namespace B08_AsteroidsEngine.Game
         private readonly float thrustPower;
         private readonly float maxSpeed;
         private readonly float friction;
-
+        private static readonly PointF[] LocalPoints = new PointF[]
+        {
+            new PointF(16f, 0f),
+            new PointF(-10f, -8f),
+            new PointF(-4f, 0f),
+            new PointF(-10f, 8f)
+        };
         public Ship(float x, float y, Input input, Size playAreaSize)
             : base(x, y, 12f)
         {
@@ -156,26 +162,17 @@ namespace B08_AsteroidsEngine.Game
 
         private PointF[] BuildShipShape()
         {
-            PointF[] localPoints = new PointF[]
-            {
-                new PointF(16f, 0f),
-                new PointF(-10f, -8f),
-                new PointF(-4f, 0f),
-                new PointF(-10f, 8f)
-            };
-
-            PointF[] worldPoints = new PointF[localPoints.Length];
+            // We only allocate the world points now, not the local points!
+            PointF[] worldPoints = new PointF[LocalPoints.Length];
             float radians = DegreesToRadians(angle);
+            float cosA = (float)Math.Cos(radians);
+            float sinA = (float)Math.Sin(radians);
 
-            for (int i = 0; i < localPoints.Length; i++)
+            for (int i = 0; i < LocalPoints.Length; i++)
             {
-                float rotatedX =
-                    localPoints[i].X * (float)Math.Cos(radians) -
-                    localPoints[i].Y * (float)Math.Sin(radians);
-
-                float rotatedY =
-                    localPoints[i].X * (float)Math.Sin(radians) +
-                    localPoints[i].Y * (float)Math.Cos(radians);
+                // Notice I also cached Cos and Sin above so we don't recalculate them in the loop
+                float rotatedX = LocalPoints[i].X * cosA - LocalPoints[i].Y * sinA;
+                float rotatedY = LocalPoints[i].X * sinA + LocalPoints[i].Y * cosA;
 
                 worldPoints[i] = new PointF(
                     Position.X + rotatedX,
@@ -183,8 +180,7 @@ namespace B08_AsteroidsEngine.Game
             }
 
             return worldPoints;
-        }
-
+        } 
         private static float DegreesToRadians(float degrees)
         {
             return degrees * (float)Math.PI / 180f;

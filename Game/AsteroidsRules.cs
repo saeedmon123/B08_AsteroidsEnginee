@@ -196,85 +196,47 @@ namespace B08_AsteroidsEngine.Game
 
         private void HandleCollisions()
         {
-            List<Bullet> bullets = gameWorld.Entities
-                .OfType<Bullet>()
-                .Where(b => b.IsActive)
-                .ToList();
+            var entities = gameWorld.Entities;
 
-            List<Asteroid> asteroids = gameWorld.Entities
-                .OfType<Asteroid>()
-                .Where(a => a.IsActive)
-                .ToList();
-
-            HandleBulletAsteroidCollisions(bullets, asteroids);
-            HandleShipAsteroidCollisions(asteroids);
-        }
-
-        private void HandleBulletAsteroidCollisions(List<Bullet> bullets, List<Asteroid> asteroids)
-        {
-            for (int i = 0; i < bullets.Count; i++)
+            for (int i = 0; i < entities.Count; i++)
             {
-                Bullet bullet = bullets[i];
+                if (!entities[i].IsActive) continue;
 
-                if (!bullet.IsActive)
+                // 1. Check Bullet vs Asteroid
+                if (entities[i] is Bullet bullet)
                 {
-                    continue;
-                }
-
-                for (int j = 0; j < asteroids.Count; j++)
-                {
-                    Asteroid asteroid = asteroids[j];
-
-                    if (!asteroid.IsActive)
+                    for (int j = 0; j < entities.Count; j++)
                     {
-                        continue;
+                        if (entities[j] is Asteroid asteroid && asteroid.IsActive)
+                        {
+                            if (AreColliding(bullet, asteroid))
+                            {
+                                bullet.Destroy();
+                                asteroid.Destroy();
+                                score += GetScoreForAsteroid(asteroid.SizeLevel);
+                                SplitAsteroid(asteroid);
+                                break; // Bullet is destroyed, stop checking it against other asteroids
+                            }
+                        }
                     }
-
-                    if (!AreColliding(bullet, asteroid))
+                }
+                // 2. Check Ship vs Asteroid
+                else if (entities[i] is Ship shipEntity && shipCollisionEnabled)
+                {
+                    for (int j = 0; j < entities.Count; j++)
                     {
-                        continue;
+                        if (entities[j] is Asteroid asteroid && asteroid.IsActive)
+                        {
+                            if (AreColliding(shipEntity, asteroid))
+                            {
+                                DestroyShip();
+                                break;
+                            }
+                        }
                     }
-
-                    bullet.Destroy();
-                    asteroid.Destroy();
-
-                    score += GetScoreForAsteroid(asteroid.SizeLevel);
-                    SplitAsteroid(asteroid);
-
-                    break;
                 }
             }
         }
-
-        private void HandleShipAsteroidCollisions(List<Asteroid> asteroids)
-        {
-            if (ship == null || !ship.IsActive)
-            {
-                return;
-            }
-
-            if (!shipCollisionEnabled)
-            {
-                return;
-            }
-
-            for (int i = 0; i < asteroids.Count; i++)
-            {
-                Asteroid asteroid = asteroids[i];
-
-                if (!asteroid.IsActive)
-                {
-                    continue;
-                }
-
-                if (AreColliding(ship, asteroid))
-                {
-                    DestroyShip();
-                    break;
-                }
-            }
-        }
-
         private void DestroyShip()
         {
             if (ship == null || !ship.IsActive)
